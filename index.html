@@ -1,0 +1,2229 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ellenszenvek MP TESZT 1.3</title>
+  <!-- Medieval stílusú betűtípus a címhez -->
+  <link href="https://fonts.googleapis.com/css2?family=MedievalSharp&display=swap" rel="stylesheet">
+  <style>
+    /* Alap stílusok */
+    body {
+      margin: 0;
+      padding: 20px;
+      min-height: 100vh;
+      color: #fff;
+      position: relative;
+      font-family: 'Arial', sans-serif;
+    }
+    /* Dimenziós háttér */
+    .anyafold {
+      background: linear-gradient(0deg, #310707 0%, #000000 74%);
+    }
+    .anyafold::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-image: radial-gradient(#fff 1px, transparent 1px);
+      background-size: 50px 50px;
+      pointer-events: none;
+      z-index: -1;
+    }
+    .haragosmely { background: #0a1f44; }
+    .pokol { 
+      background: linear-gradient(0deg, #ff4500, #ff0000); 
+      background-attachment: fixed;
+      animation: vibrate 0.5s infinite;
+    }
+    .zordsik { 
+      background: linear-gradient(0deg, #a0c8f0, #ffffff); 
+      background-attachment: fixed;
+    }
+    /* Zordsíkban sötétebb szöveg */
+    .zordsik, .zordsik * {
+      color: #333 !important;
+    }
+    /* Animációk */
+    @keyframes vibrate {
+      0% { transform: translate(0,0); }
+      50% { transform: translate(2px, 2px); }
+      100% { transform: translate(0,0); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; } to { opacity: 1; }
+    }
+    .fade-in { animation: fadeIn 0.5s ease; }
+    @keyframes bounce {
+      0% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+      100% { transform: translateY(0); }
+    }
+    .bounce {
+      animation: bounce 0.5s ease;
+    }
+    /* Klasszikus böngészős játék stílus */
+    h1 {
+      font-family: 'MedievalSharp', cursive;
+      font-size: 2.5rem;
+      text-align: center;
+    }
+    /* Gomb stílus – minden gomb azonos stílust kap (action-button) */
+    .action-button {
+      margin: 5px 0;
+      padding: 8px 12px;
+      background: #1a0a0a;
+      color: #d4af37;
+      border: 1px solid #3a1a1a;
+      cursor: pointer;
+      transition: background 0.3s ease, transform 0.2s;
+      border-radius: 5px;
+      text-align: center;
+      font-size: 1rem;
+    }
+    .action-button:hover {
+      background: #2c0a0f;
+      transform: translateY(-2px);
+    }
+    .action-button:active {
+      transform: scale(0.95);
+    }
+    /* Turn-dependent gombok – csak az aktív csapat tagjai használhatják */
+    .turn-dependent:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    /* Egyéb UI stílusok */
+    .race-selector {
+      position: relative;
+      width: 280px;
+      margin: 20px 0;
+      background: rgba(0,0,0,0.8);
+      border: 1px solid #3a1a1a;
+      padding: 10px;
+    }
+    .race-option {
+      padding: 12px 15px;
+      margin: 3px;
+      background: #1a0a0a;
+      border: 1px solid #3a1a1a;
+      color: #d4af37;
+      font-family: 'Palatino Linotype', 'Book Antiqua', serif;
+      font-size: 16px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    .race-option:hover {
+      background: #2c0a0f;
+      border-color: #c0a020;
+      transform: translateX(5px);
+    }
+    .race-image {
+      display: none;
+      position: absolute;
+      left: 290px;
+      top: 0;
+      width: 220px;
+      height: 220px;
+      border: 3px solid #3a1a1a;
+      box-shadow: 2px 2px 10px rgba(0,0,0,0.7);
+      filter: sepia(0.4) contrast(1.1);
+    }
+    .race-option:hover + .race-image {
+      display: block;
+      animation: fadeIn 0.5s ease;
+    }
+    body::before {
+      content: '';
+      position: absolute;
+      top: 20px; left: 20px; right: 20px; bottom: 20px;
+      border: 4px double #0b0404;
+      pointer-events: none;
+    }
+    .container {
+      display: flex;
+      max-width: 1200px;
+      margin: 0 auto;
+      position: relative;
+    }
+    .game-content { width: 70%; }
+    .notes { width: 30%; padding-left: 20px; }
+    textarea {
+      width: 100%;
+      height: 300px;
+      background: rgba(0,0,0,0.7);
+      border: 1px solid #3a1a1a;
+      color: #d4af37;
+      padding: 10px;
+    }
+    .class-info { color: #8a8a8a; font-style: italic; }
+    #roomSection {
+      margin-bottom: 20px;
+      padding: 10px;
+      background: rgba(0,0,0,0.5);
+      border: 1px solid #3a1a1a;
+    }
+    /* Játékállapot információk: kör, csapat */
+    #gameStatus {
+      margin-top: 10px;
+      font-weight: bold;
+    }
+    .player-card {
+      background: rgba(0,0,0,0.7);
+      border: 1px solid #3a1a1a;
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 5px;
+    }
+    .player-card h3 { color: #d4af37; margin: 0 0 10px 0; }
+    .player-stats { font-size: 14px; }
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 10px;
+    }
+    .stat-row span { flex: 1; text-align: center; }
+    .progress-bar {
+      width: 200px;
+      height: 20px;
+      background: #310707;
+      border: 1px solid #3a1a1a;
+      margin: 5px 0;
+      position: relative;
+    }
+    .progress-fill {
+      height: 100%;
+      background: #d4af37;
+      transition: width 0.3s ease;
+      text-align: center;
+      line-height: 20px;
+      color: #000;
+      font-weight: bold;
+    }
+    .event-log {
+      background: rgba(0,0,0,0.7);
+      border: 1px solid #3a1a1a;
+      padding: 10px;
+      margin-top: 20px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    .event-message {
+      margin: 5px 0;
+      animation: slideIn 0.3s ease;
+    }
+    @keyframes slideIn {
+      from { transform: translateX(20px); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+    .damage-animation { animation: pulse 0.5s ease; }
+    @keyframes pulse {
+      50% { transform: scale(1.1); }
+    }
+    /* Kártyák – kattintható elemek */
+    .card {
+      background: rgba(255,255,255,0.1);
+      padding: 4px 8px;
+      border: 1px solid #d4af37;
+      border-radius: 3px;
+      cursor: pointer;
+      margin: 2px;
+    }
+    .card:hover { background: rgba(255,255,255,0.2); }
+    /* Combat Modal */
+    #combatModal {
+      display: none;
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0,0,0,0.9);
+      border: 2px solid #d4af37;
+      padding: 20px;
+      z-index: 1000;
+      width: 300px;
+      text-align: center;
+      color: #d4af37;
+      font-family: monospace;
+    }
+    #combatModal pre {
+      background: #1a1a1a;
+      padding: 10px;
+      overflow: auto;
+      max-height: 150px;
+    }
+    #combatModal button {
+      margin-top: 10px;
+      padding: 8px 12px;
+      background: #1a0a0a;
+      color: #d4af37;
+      border: 1px solid #d4af37;
+      cursor: pointer;
+    }
+    /* Kártyák megjelenítése – parallax kártyaterület */
+    .card-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      margin-top: 10px;
+    }
+    .card {
+      width: 120px;
+      text-align: center;
+      transition: transform 0.3s ease, background 0.3s;
+    }
+    .card:hover {
+      background: #2c0a0f;
+      transform: scale(1.05);
+    }
+  </style>
+</head>
+<body class="anyafold">
+  <!-- Combat Modal -->
+  <div id="combatModal">
+    <h3 id="combatEnemyName">Ellenség</h3>
+    <p id="combatEnemyHP">HP: 0/0</p>
+    <pre id="combatEnemyArt">
+  .-.
+ (o.o)
+  |=|
+  __|__
+    </pre>
+    <button class="action-button" onclick="combatRoll()">Dobás</button>
+  </div>
+
+  <div id="bossSymbol">BOSS</div>
+  <h1>Ellenszenvek Beta 1.3 Multiplayer</h1>
+  <div id="roomSection">
+    <button class="action-button" onclick="window.createRoom()">Szoba létrehozása</button>
+    <button class="action-button" onclick="window.joinRoom()">Csatlakozás szobához</button>
+    <!-- Csak a szoba készítője számára -->
+    <button class="action-button" id="startGameBtn" style="display:none;" onclick="startGame()">Játék indítása</button>
+    <p id="roomStatus">Nem csatlakoztál még szobához.</p>
+    <!-- Játékállapot: kör, csapat -->
+    <div id="gameStatus"></div>
+    <div id="roomPlayers"></div>
+  </div>
+  
+  <div class="container">
+    <div class="game-content">
+      <!-- Karakter készítés – a játék indítása után ez eltűnik -->
+      <div id="characterCreationSection">
+        <h2>Karakter Létrehozás</h2>
+        <label for="name">Karakter neve:</label>
+        <input type="text" id="name" placeholder="Nevezd el a Hősödet"><br>
+        <label for="class">Kaszt:</label>
+        <select id="class" onchange="updateClassInfo()">
+          <optgroup label="Fizikai">
+            <option value="Harcos">Harcos</option>
+            <option value="Tolvaj">Tolvaj</option>
+            <option value="Koldus">Koldus</option>
+          </optgroup>
+          <optgroup label="Spirit">
+            <option value="Druida">Druida</option>
+            <option value="Mágus">Mágus</option>
+            <option value="SötétElf">Sötét Elf</option>
+          </optgroup>
+          <optgroup label="Support">
+            <option value="Tünde">Tünde</option>
+            <option value="Tank">Tank</option>
+            <option value="Pigmen">Pigmen</option>
+            <option value="Pap">Pap</option>
+          </optgroup>
+          <optgroup label="Speciális">
+            <option value="Alakváltó">Alakváltó</option>
+          </optgroup>
+        </select><br>
+        <p id="classInfo" class="class-info"></p>
+        <div>
+          <h3>Statok beállítása</h3>
+          <p id="remainingPoints">Maradék pontok: 17</p>
+          <label for="atk">ATK:</label>
+          <button class="action-button" onclick="modifyStat('atk', -1)">-</button>
+          <input type="number" id="atk" value="1" readonly>
+          <button class="action-button" onclick="modifyStat('atk', 1)">+</button><br>
+          <label for="esc">ESC:</label>
+          <button class="action-button" onclick="modifyStat('esc', -1)">-</button>
+          <input type="number" id="esc" value="1" readonly>
+          <button class="action-button" onclick="modifyStat('esc', 1)">+</button><br>
+          <label for="def">DEF:</label>
+          <button class="action-button" onclick="modifyStat('def', -1)">-</button>
+          <input type="number" id="def" value="1" readonly>
+          <button class="action-button" onclick="modifyStat('def', 1)">+</button><br>
+        </div>
+        <button class="action-button" onclick="createCharacter()">Karakter Létrehozása</button>
+      </div>
+      
+      <!-- Játék folyamata -->
+      <h2>Karakter Adatok</h2>
+      <div id="characterInfo"></div>
+      <h2>HP Állapot</h2>
+      <div class="progress-bar">
+        <div class="progress-fill" id="hpBar" style="width: 100%">0/0</div>
+      </div>
+      <h2>Sebzés Kezelése</h2>
+      <label for="dmgInput">Kapott sebzés:</label>
+      <input type="number" id="dmgInput">
+      <button class="action-button turn-dependent" onclick="takeDamage()">Sebzés alkalmazása</button>
+      <p id="hpStatus"></p>
+      <h2>Gyógyítás</h2>
+      <label for="healInput">Gyógyítás mennyisége:</label>
+      <input type="number" id="healInput">
+      <button class="action-button turn-dependent" onclick="healCharacter()">Gyógyítás</button>
+      <p id="healStatus"></p>
+      <h2>Támadás</h2>
+      <label for="enemyType">Ellenfél típusa:</label>
+      <select id="enemyType">
+        <option value="Fizikai">Fizikai</option>
+        <option value="Spirit">Spirit</option>
+        <option value="Support">Support</option>
+      </select><br>
+      <label for="cardMultiplier">Kártya szorzó:</label>
+      <input type="number" id="cardMultiplier" step="0.1" value="1"><br>
+      <button class="action-button turn-dependent" onclick="rollDice()">Dobás 6 és 10 oldalú kockával</button>
+      <p id="diceResult"></p>
+      <h2>Kártyahúzás</h2>
+      <button class="action-button turn-dependent" onclick="drawCard()">Kártyát húzok</button>
+      <p id="drawResult"></p>
+      <h2>Vakítás</h2>
+      <button class="action-button turn-dependent" onclick="blinding()">Vakítás</button>
+      <p id="blindingResult"></p>
+      <h2>Menekülés</h2>
+      <button class="action-button turn-dependent" onclick="escapeAttempt()">Menekülés</button>
+      <p id="escapeResult"></p>
+      <div id="shapeshiftSection" style="display: none;">
+        <h2>Alakváltás</h2>
+        <select id="shapeshiftClass">
+          <option value="Harcos">Harcos</option>
+          <option value="Tolvaj">Tolvaj</option>
+          <option value="Koldus">Koldus</option>
+          <option value="Druida">Druida</option>
+          <option value="Mágus">Mágus</option>
+          <option value="SötétElf">Sötét Elf</option>
+          <option value="Tünde">Tünde</option>
+          <option value="Tank">Tank</option>
+          <option value="Pigmen">Pigmen</option>
+          <option value="Pap">Pap</option>
+        </select>
+        <button class="action-button turn-dependent" onclick="activateShapeshift()">Alakváltás aktiválása</button>
+        <p id="shapeshiftTimer"></p>
+      </div>
+      <h2>Különleges képességek</h2>
+      <button class="action-button turn-dependent" onclick="druidHealPigmen()">Druida: Gyógyítja a Pigmen-t</button>
+      <button class="action-button turn-dependent" onclick="darkElfResurrect()">Sötét Elf: Felélesztés</button>
+      <button class="action-button turn-dependent" onclick="druidActivatePigmen()">Druida: Aktiválja Pigmen ösztét</button>
+      <!-- Boss gomb eltávolítva -->
+      <div class="event-log" id="eventLog"></div>
+      Jogvédett GPL 3.0 (FEJLESZTÉS ALATT, hiba esetén bugreport: balint.sagi.gysz@gmail.com)
+    </div>
+    <div class="notes">
+      <h2>Jegyzetek</h2>
+      <textarea id="notesArea" placeholder="Írj ide jegyzeteket..."></textarea>
+      <button class="action-button" onclick="saveNotes()">Jegyzetek mentése</button>
+    </div>
+  </div>
+
+  <!-- Firebase és fő logika -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-app.js";
+    import { getDatabase, ref, set, onDisconnect, update, get, onValue, push } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-database.js";
+    const firebaseConfig = {
+      apiKey: "AIzaSyD_...",
+      authDomain: "eszgame-server.firebaseapp.com",
+      databaseURL: "https://eszgame-server-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "eszgame-server",
+      storageBucket: "eszgame-server.appspot.com",
+      messagingSenderId: "319541407839",
+      appId: "1:319541407839:web:84b08fe2b4ae2852b0abea",
+      measurementId: "G-307PWJ62Q0"
+    };
+    const app = initializeApp(firebaseConfig);
+    const database = getDatabase(app);
+    window.firebase = {
+      database,
+      ref: (path) => ref(database, path),
+      set,
+      push,
+      update,
+      get,
+      onValue,
+      onDisconnect
+    };
+    
+    // Globális log spam védelmi változók
+    let currentRoundLocal = 0;
+    let logCountInCurrentRound = 0;
+    let pendingLogMessage = null;
+    // Eseménylog írása – ha több mint 5 üzenet van, az utolsó a következő kör elején jelenik meg
+    window.logEvent = (message) => {
+      const eventLog = document.getElementById('eventLog');
+      if(logCountInCurrentRound >= 5) {
+        pendingLogMessage = message;
+        return;
+      }
+      const eventElement = document.createElement('div');
+      eventElement.className = 'event-message';
+      let color = "#d4af37";
+      const lowerMsg = message.toLowerCase();
+      if(lowerMsg.includes("támadás") || lowerMsg.includes("sebzés")) {
+        color = "#ff0000";
+      } else if(lowerMsg.includes("gyógyítás")) {
+        color = "#0000ff";
+      } else if(lowerMsg.includes("húzott") || lowerMsg.includes("kártya")) {
+        color = "#00ff00";
+      }
+      eventElement.style.color = color;
+      eventElement.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+      eventLog.appendChild(eventElement);
+      logCountInCurrentRound++;
+      eventLog.scrollTop = eventLog.scrollHeight;
+    };
+    
+    // Globális játékosok objektuma, amelyet frissítünk a Firebase-ből
+    window.globalPlayers = {};
+    
+    // Szoba létrehozása – a szoba objektum tartalmazza a központi paklit és globális játékállapotot
+    window.createRoom = async () => {
+      try {
+        window.roomId = 'room_' + Math.random().toString(36).substr(2, 9);
+        const roomRef = window.firebase.ref(`rooms/${window.roomId}`);
+        await window.firebase.set(roomRef, {
+          createdAt: Date.now(),
+          players: {},
+          events: {},
+          deck: [],
+          gameStarted: false,
+          currentDimension: "Anyaföld",
+          currentRound: 0,
+          currentTeamTurn: ""
+        });
+        window.firebase.onDisconnect(roomRef).remove();
+        document.getElementById("roomStatus").textContent = `Szoba létrehozva: ${window.roomId}`;
+        window.logEvent(`Szoba létrehozva: ${window.roomId}`);
+        initializeDeck();
+        window.firebase.update(roomRef, { deck: roomDeck });
+        window.listenToRoom();
+        document.getElementById("startGameBtn").style.display = "inline-block";
+      } catch (error) {
+        alert("Hiba: " + error.message);
+      }
+    };
+    
+    // Szobához csatlakozás
+    window.joinRoom = async () => {
+      const inputRoom = prompt("Add meg a szoba kódját:");
+      if (!inputRoom) return;
+      try {
+        const roomRef = window.firebase.ref(`rooms/${inputRoom}`);
+        const snapshot = await window.firebase.get(roomRef);
+        if (snapshot.exists()) {
+          window.roomId = inputRoom;
+          await window.firebase.update(roomRef, { lastActivity: Date.now() });
+          document.getElementById("roomStatus").textContent = `Csatlakozva: ${window.roomId}`;
+          window.logEvent(`Csatlakozva: ${window.roomId}`);
+          window.listenToRoom();
+        } else {
+          alert("A szoba nem létezik!");
+        }
+      } catch (error) {
+        alert("Hiba: " + error.message);
+      }
+    };
+    
+    // Szoba figyelése, beleértve a globális játékállapotot (dimenzió, kör, csapat) és a játékosokat
+    window.listenToRoom = () => {
+      if (!window.roomId) return;
+      const roomRef = window.firebase.ref(`rooms/${window.roomId}`);
+      window.firebase.onValue(roomRef, (snapshot) => {
+        const roomData = snapshot.val() || {};
+        if(roomData.currentDimension) {
+          currentDimension = roomData.currentDimension;
+          document.body.className = dimensionClasses[currentDimension];
+        }
+        if(roomData.currentRound !== currentRoundLocal) {
+          currentRoundLocal = roomData.currentRound;
+          logCountInCurrentRound = 0;
+          if(pendingLogMessage) {
+            window.logEvent(pendingLogMessage);
+            pendingLogMessage = null;
+          }
+        }
+        if(roomData.gameStarted) {
+          document.getElementById("gameStatus").innerHTML = `Kör: ${roomData.currentRound} | Jelenlegi csapat: ${roomData.currentTeamTurn}`;
+        } else {
+          document.getElementById("gameStatus").innerHTML = "Játék még nem indult.";
+        }
+      });
+      const playersRef = window.firebase.ref(`rooms/${window.roomId}/players`);
+      window.firebase.onValue(playersRef, (snapshot) => {
+        const players = snapshot.val() || {};
+        window.globalPlayers = players;  // Frissítjük a globális játékosokat
+        const roomPlayersDiv = document.getElementById("roomPlayers");
+        roomPlayersDiv.innerHTML = Object.values(players).map(player => `
+          <div class="player-card">
+            <h3>${player.name}${player.team ? " ("+player.team+")" : ""}</h3>
+            <div class="player-stats">
+              <p>Kaszt: ${player.class}</p>
+              <div class="progress-bar">
+                <div class="progress-fill" style="width: ${(player.currentHP/player.maxHP)*100}%;">${player.currentHP}/${player.maxHP}</div>
+              </div>
+              <div class="stat-row">
+                <span>ATK: ${player.atk}</span>
+                <span>DEF: ${player.def}</span>
+                <span>ESC: ${player.esc}</span>
+              </div>
+            </div>
+          </div>
+        `).join('');
+      });
+      const eventsRef = window.firebase.ref(`rooms/${window.roomId}/events`);
+      window.firebase.onValue(eventsRef, (snapshot) => {
+        const events = snapshot.val() || {};
+        Object.values(events).forEach(event => {
+          if (!event.processed) {
+            window.logEvent(event.message);
+            window.firebase.update(window.firebase.ref(`rooms/${window.roomId}/events/${event.key}`), { processed: true });
+          }
+        });
+      });
+    };
+    
+    const dimensionClasses = {
+      "Anyaföld": "anyafold",
+      "Haragosmély": "haragosmely",
+      "Pokol": "pokol",
+      "Zordsík": "zordsik"
+    };
+  </script>
+  
+  <!-- Boss modul -->
+  <script type="module">
+    const BossModule = {
+      data: {
+        bonusStats: { atk: 2, esc: 2, def: 2 }
+      },
+      triggerBoss: function(character) {
+        window.logEvent("Boss kártya húzva! Boss jelenlét!");
+        const bossSymbol = document.getElementById("bossSymbol");
+        bossSymbol.style.opacity = 1;
+        setTimeout(() => { bossSymbol.style.opacity = 0; }, 1000);
+        const hasBrick = character.cards.find(card => card.name === "Csak egy tégla a falban");
+        if(hasBrick) {
+          window.logEvent("Átadtad a boss átalakulást a 'Csak egy tégla a falban' kártyával!");
+          character.cards = character.cards.filter(card => card.name !== "Csak egy tégla a falban");
+        } else {
+          character.preBossStatus = {...character};
+          character.isBoss = true;
+          window.logEvent(`${character.name} boss-á alakult!`);
+        }
+        updateCharacterDisplay();
+      },
+      defeatBoss: function(character) {
+        if(character.isBoss) {
+          character = {...character.preBossStatus};
+          character.isBoss = false;
+          window.logEvent("Boss legyőzve! Visszatértél normál állapotba.");
+        }
+        character.atk += this.data.bonusStats.atk;
+        character.esc += this.data.bonusStats.esc;
+        character.def += this.data.bonusStats.def;
+        window.logEvent("Minden harcoló játékos +2 statot kapott!");
+        updateCharacterDisplay();
+      }
+    };
+    window.BossModule = BossModule;
+    export default BossModule;
+  </script>
+  
+  <!-- Játéklogika és kártyák -->
+  <script>
+    let character = {};
+    let turns = 0;
+    let roomDeck = [];
+    let currentDimension = "Anyaföld";
+    const classHP = {
+      Harcos: 600, Mágus: 500, Tolvaj: 400, Druida: 450,
+      Pigmen: 525, Tünde: 425, Pap: 375, SötétElf: 450,
+      Koldus: 350, Tank: 900, Alakváltó: 400
+    };
+    const classTypes = {
+      Fizikai: ["Harcos", "Tolvaj", "Koldus"],
+      Spirit: ["Druida", "Mágus", "SötétElf"],
+      Support: ["Tünde", "Tank", "Pigmen", "Pap"],
+      Speciális: ["Alakváltó"]
+    };
+    
+    // A támadás során célkeresés: az ellenkező csapatból egy élő játékos kiválasztása
+    function getOpponent() {
+      let targetId = null;
+      let targetPlayer = null;
+      for (const pid in window.globalPlayers) {
+        const p = window.globalPlayers[pid];
+        if(p.team && character.team && p.team !== character.team && p.currentHP > 0) {
+          targetId = pid;
+          targetPlayer = p;
+          break;
+        }
+      }
+      return { targetId, targetPlayer };
+    }
+    
+    // Kártya definíciók (ugyanaz, mint korábban)
+    const cardDefinitions = {
+      "Varázskönyv": {
+        type: "támadó",
+        effect: (user) => {
+          if(user.class === "Mágus") return { multiplier: 1.08, message: "Mágus +1.08x támadás" };
+          if(user.class === "Harcos") return { tempAttack: 15, duration: 1, message: "Harcos +15DMG 1 körre" };
+          return null;
+        }
+      },
+      "Vanillia Fagyi": {
+        type: "támadó",
+        effect: (user) => {
+          if(user.class === "Druida") return { aoeDamage: 50, message: "Minden ellenség -50HP" };
+          return { message: "Csak druidák használhatják!" };
+        }
+      },
+      "Tömő": {
+        type: "támadó",
+        effect: (user) => ({
+          condition: (enemy) => enemy.currentHP < 200,
+          effect: { hpDrain: 0.1, duration: 2 },
+          message: "200HP alatti ellenfelek -10% HP sebzés 2 körig"
+        })
+      },
+      "FIFO": {
+        type: "speciális",
+        effect: (user) => {
+          if(user.cards.length > 0) {
+            const firstCard = user.cards.shift();
+            roomDeck.push(firstCard);
+            return { message: "Visszaraktad: " + firstCard.name };
+          }
+          return null;
+        }
+      },
+      "Blitzkrieg": {
+        type: "állapotváltoztató",
+        effect: () => ({
+          teamBuff: { atk: 2, duration: 1 },
+          message: "Csapattársak +2 ATK 1 körre"
+        })
+      },
+      "Tsalafintaság": {
+        type: "csetepaté",
+        effect: (user, roll) => {
+          const results = {
+            6: { instantWin: true, message: "Instant győzelem!" },
+            5: { damage: 25, target: "enemy", message: "25 sebzés az ellenfélnek" },
+            4: { damage: 5, target: "enemy", message: "5 sebzés az ellenfélnek" },
+            3: { message: "Miss!" },
+            2: { damage: 5, target: "self", message: "-5HP sebzés" },
+            1: { damage: 20, target: "self", message: "-20HP sebzés" }
+          };
+          return results[roll] || {};
+        }
+      },
+      "Keserű Lóhere": {
+        type: "speciális",
+        effect: () => ({
+          permanentEffect: { unlucky: true, hpPenalty: 10 },
+          message: "Szerencsétlenség! -10HP minden támadásnál"
+        })
+      },
+      "Szemfedő": {
+        type: "speciális",
+        effect: () => ({
+          permanentEffect: { immuneToBlind: true, stumble: true },
+          message: "Nem vakítható, de botlásos támadások"
+        })
+      },
+      "Szerencsés Aranyfog": {
+        type: "speciális",
+        effect: () => ({
+          drawBonus: { onSix: 2 },
+          message: "6-os húzásnál +1 kártya"
+        })
+      },
+      "Titokzatos Pálinka": {
+        type: "szerencse",
+        effect: (user) => {
+          const roll = Math.floor(Math.random() * 6) + 1;
+          if(roll === 6) return { hp: 25, atk: 2, duration: 2, message: "+25HP és +2ATK 2 körre" };
+          if(roll >= 2 && roll <=5) return { message: "Finom ízű pálinka" };
+          return { hp: -50, message: "Rosszullét! -50HP" };
+        }
+      },
+      "Csendes Pihenő": {
+        type: "speciális",
+        effect: () => ({
+          sleep: { duration: 3, hpReward: 125 },
+          message: "3 kör alvás, majd +125HP"
+        })
+      },
+      "Körforgó": {
+        type: "speciális",
+        effect: () => ({
+          reverseTurns: true,
+          message: "A körök visszafele folytatódnak!"
+        })
+      },
+      "Főnix Tolla": {
+        type: "támadó",
+        effect: () => ({
+          classDamage: { druid: 0.15, tunde: 0.15, duration: 2 },
+          message: "Druidák és Tündék ellen +15% DMG 2 körig"
+        })
+      },
+      "Lant": { type: "állapotváltoztató", effect: () => ({ multiplier: 1.05, message: "Lant: +1.05x támadás" }) },
+      "Késélező": { type: "állapotváltoztató", effect: () => ({ multiplier: 1.08, message: "Késélező: +1.08x támadás" }) },
+      "C-Dagger": { 
+        type: "állapotváltoztató",
+        effect: (user) => user.class === "Tolvaj" ? { multiplier: 1.2, message: "Tolvaj: +1.2x támadás" } : null 
+      },
+      "Legalizált Atombomba": {
+        type: "speciális",
+        effect: () => ({ aoeDamage: 75, message: "Mindenki kap -75HP-t!" })
+      },
+      "A Meg-Nem-Halás Medálja": {
+        type: "speciális",
+        effect: () => ({ resurrection: { hp: 50, delay: 2 }, message: "Halál után 2 körrel feléledsz 50HP-val" })
+      },
+      "Csúf Boszorka": {
+        type: "csetepaté",
+        effect: (user, roll) => {
+          const results = {
+            6: { instantWin: true, message: "Instant győzelem!" },
+            5: { damage: 25, target: "enemy", message: "25 sebzés az ellenfélnek" },
+            4: { damage: 5, target: "enemy", message: "5 sebzés az ellenfélnek" },
+            3: { message: "Miss!" },
+            2: { damage: 5, target: "self", message: "-5HP sebzés" },
+            1: { damage: 20, target: "self", message: "-20HP sebzés" }
+          };
+          return results[roll] || {};
+        }
+      },
+      "Honvágy": {
+        type: "honvagy",
+        effect: (user) => ({
+          message: "Honvágy kártya: manuális aktiválás szükséges!"
+        })
+      },
+      "Portál": {
+        type: "portal",
+        effect: (user) => {
+          triggerPortal();
+          return { message: "Portál kártya aktiválva, dimenzióváltás!" };
+        }
+      },
+      "Boss": {
+        type: "boss",
+        effect: (user) => ({
+          message: "Boss kártya hatása aktiválódott!"
+        })
+      }
+    };
+    
+    // Pakli inicializálása – központi pakli, minden kártya egyszer szerepel
+    function initializeDeck() {
+      roomDeck = [];
+      const cardsToAdd = {
+        "Varázskönyv": 1,
+        "Vanillia Fagyi": 1,
+        "Tömő": 1,
+        "FIFO": 1,
+        "Blitzkrieg": 1,
+        "Tsalafintaság": 1,
+        "Keserű Lóhere": 1,
+        "Szemfedő": 1,
+        "Titokzatos Pálinka": 1,
+        "Csendes Pihenő": 1,
+        "Főnix Tolla": 1,
+        "Lant": 1,
+        "Késélező": 1,
+        "C-Dagger": 1,
+        "Legalizált Atombomba": 1,
+        "A Meg-Nem-Halás Medálja": 1,
+        "Csúf Boszorka": 1,
+        "Honvágy": 1,
+        "Portál": 1,
+        "Boss": 1
+      };
+      Object.keys(cardsToAdd).forEach(cardName => {
+        roomDeck.push({ 
+          name: cardName,
+          type: cardDefinitions[cardName].type
+        });
+      });
+      shuffleArray(roomDeck);
+    }
+    
+    function shuffleArray(array) {
+      for(let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+    }
+    
+    // Kártya effekt alkalmazása
+    function applyCardEffect(card, user) {
+      const cardDef = cardDefinitions[card.name];
+      if (!cardDef) return;
+      if (cardDef.type === "csetepaté") {
+        startCombat(card, user);
+        return;
+      }
+      if (cardDef.type === "honvagy") {
+        currentDimension = "Anyaföld";
+        updateDimension();
+        window.logEvent(`[Honvágy] Visszateleportáltál Anyaföldre!`);
+        return;
+      }
+      const effect = typeof cardDef.effect === 'function' ? cardDef.effect(user) : cardDef.effect;
+      if (effect) {
+        window.logEvent(`[${card.name}] ${effect.message}`);
+        if (effect.multiplier) {
+          user.currentMultiplier = effect.multiplier;
+          setTimeout(() => {
+            user.currentMultiplier = 1;
+            window.logEvent(`[${card.name}] Hatás lejárt`);
+          }, effect.duration * 3000);
+        }
+        if (effect.tempAttack) {
+          user.tempAttack = (user.tempAttack || 0) + effect.tempAttack;
+          user.tempAttackDuration = effect.duration;
+        }
+        if (effect.hp) {
+          user.currentHP = Math.min(user.currentHP + effect.hp, user.maxHP);
+          updateCharacterDisplay();
+        }
+      }
+    }
+    
+    function handleCombatResult(result, cardName) {
+      const logEventContainer = document.getElementById('eventLog');
+      const eventElement = document.createElement('div');
+      eventElement.className = 'event-message';
+      eventElement.innerHTML = `<strong>${cardName}:</strong> ${result.message}`;
+      logEventContainer.appendChild(eventElement);
+      if(result.instantWin) {
+        window.logEvent("ELLENSÉG LEGYŐZVE!");
+      }
+      // Támadás eredményeként, ha az ellenfélre vonjuk le a sebzést:
+      if(result.damage && result.target === "enemy") {
+        // Kiválasztunk egy ellenfél játékost az ellenkező csapatból
+        const opponent = getOpponent();
+        if(opponent.targetId) {
+          const newHP = Math.max(opponent.targetPlayer.currentHP - result.damage, 0);
+          window.firebase.update(window.firebase.ref(`rooms/${window.roomId}/players/${opponent.targetId}`), { currentHP: newHP });
+          window.logEvent(`Támadás: ${character.name} okozott ${result.damage} sebzést ${opponent.targetPlayer.name}-nak!`);
+          if(newHP === 0) {
+            window.logEvent(`${opponent.targetPlayer.name} legyőzve!`);
+          }
+        } else {
+          window.logEvent("Nincs ellenfél, aki sérülhetne!");
+        }
+      }
+      if(result.damage && result.target === "self") {
+        character.currentHP = Math.max(character.currentHP - result.damage, 0);
+        updateCharacterDisplay();
+        window.logEvent(`${character.name} kapott ${result.damage} önsebzést!`);
+        if(character.currentHP === 0) {
+          handleDeath();
+        }
+      }
+    }
+    
+    function handleDeath() {
+      if(character.cards.some(c => c.name === "A Meg-Nem-Halás Medálja")) {
+        window.logEvent("A medál feléleszti a karaktert 2 kör múlva!");
+        setTimeout(() => {
+          character.currentHP = Math.floor(character.maxHP * 0.5);
+          updateCharacterDisplay();
+        }, 6000);
+      } else {
+        window.logEvent("A karakter meghalt!");
+      }
+    }
+    
+    function startCombat(card, user) {
+      // Ebben a verzióban a csatát a card effekt kezeli, így itt csak logolunk
+      window.logEvent("Csetepaté csata elindult!");
+    }
+    
+    // Függvény, hogy a támadás során az ellenkező csapatból kiválasszuk az első élő játékost
+    function getOpponent() {
+      let targetId = null;
+      let targetPlayer = null;
+      for (const pid in window.globalPlayers) {
+        const p = window.globalPlayers[pid];
+        if(p.team && character.team && p.team !== character.team && p.currentHP > 0) {
+          targetId = pid;
+          targetPlayer = p;
+          break;
+        }
+      }
+      return { targetId, targetPlayer };
+    }
+    
+    async function rollDice() {
+      try {
+        if (!character.name) throw new Error("Nincs karakter!");
+        const roomRef = window.firebase.ref(`rooms/${window.roomId}/events`);
+        const rollEvent = {
+          type: 'dice',
+          message: `Támadás: ${character.name} dobott a kockával!`,
+          processed: false,
+          timestamp: Date.now()
+        };
+        const newEventRef = window.firebase.push(roomRef);
+        await window.firebase.set(newEventRef, rollEvent);
+    
+        let roll6 = Math.floor(Math.random() * 6) + 1;
+        let roll10 = (character.class === "Tank") ? 10 : Math.floor(Math.random() * 10) + 1;
+        const diceResultEl = document.getElementById("diceResult");
+        diceResultEl.innerHTML = `6-os kocka: ${roll6}, 10-es kocka: ${roll10}`;
+        diceResultEl.classList.add('bounce');
+        setTimeout(() => { diceResultEl.classList.remove('bounce'); }, 500);
+    
+        let baseDamage = (roll6 * character.atk) / 2;
+        let elmeallapot = roll10 / 10;
+        const cardMultiplier = parseFloat(document.getElementById('cardMultiplier').value);
+        let totalDamage = Math.floor(baseDamage * cardMultiplier * elmeallapot);
+    
+        if(character.class === "Harcos") {
+          if(roll6 === 5) {
+            totalDamage *= 2;
+            window.logEvent("Támadás: Harcos kritikus találat!");
+          }
+          if(roll10 === 10) {
+            totalDamage *= 2;
+            window.logEvent("Támadás: Harcos dupla kritikus!");
+          }
+        }
+        if(character.class === "Koldus") {
+          let extraRoll = Math.floor(Math.random() * 10) + 1;
+          if(roll10 === 10 && extraRoll === 10) {
+            window.logEvent("Támadás: Koldus vakította az ellenfelet!");
+          }
+        }
+    
+        // Levonás az ellenkező csapat egyik élő játékosáról
+        const opponent = getOpponent();
+        if(opponent.targetId) {
+          const newHP = Math.max(opponent.targetPlayer.currentHP - totalDamage, 0);
+          window.firebase.update(window.firebase.ref(`rooms/${window.roomId}/players/${opponent.targetId}`), { currentHP: newHP });
+          window.logEvent(`Támadás: ${character.name} okozott ${totalDamage} sebzést ${opponent.targetPlayer.name}-nak!`);
+          if(newHP === 0) {
+            window.logEvent(`${opponent.targetPlayer.name} legyőzve!`);
+          }
+        } else {
+          window.logEvent("Nincs ellenfél, aki sérülhetne!");
+        }
+    
+        const damageEvent = {
+          type: 'damage',
+          message: `Támadás: ${character.name} sebzése: ${totalDamage}`,
+          processed: false,
+          timestamp: Date.now()
+        };
+        await window.firebase.push(roomRef, damageEvent);
+        document.getElementById('diceResult').classList.add('damage-animation');
+        setTimeout(() => { document.getElementById('diceResult').classList.remove('damage-animation'); }, 500);
+        incrementTurn();
+      } catch (error) {
+        alert("Hiba történt: " + error.message);
+      }
+    }
+    window.rollDice = rollDice;
+    
+    function healCharacter() {
+      if(!character.name) {
+        alert("Előbb hozz létre karaktert!");
+        return;
+      }
+      let heal = parseInt(document.getElementById("healInput").value);
+      if(isNaN(heal) || heal < 0) {
+        alert("Érvénytelen gyógyítás érték!");
+        return;
+      }
+      if(character.class === "Pap") {
+        heal *= 2;
+      }
+      character.currentHP = Math.min(character.currentHP + heal, character.maxHP);
+      document.getElementById("healStatus").innerHTML = `Gyógyítás: ${heal} | Jelenlegi HP: ${character.currentHP}`;
+      window.logEvent(`Gyógyítás: ${character.name} gyógyult ${heal}HP-val!`);
+      updateCharacterDisplay();
+    }
+    window.healCharacter = healCharacter;
+    
+    function takeDamage() {
+      if(!character.name) {
+        alert("Előbb hozz létre karaktert!");
+        return;
+      }
+      if(character.inPocket && character.class === "Mágus") {
+        window.logEvent("Mágus a zsebdimenzióban, nem kap sebzést!");
+        return;
+      }
+      const dmg = parseInt(document.getElementById("dmgInput").value);
+      if(isNaN(dmg) || dmg < 0) {
+        alert("Érvénytelen sebzés érték!");
+        return;
+      }
+      let netDamage = dmg;
+      if(character.defenseBuffer) {
+        netDamage = Math.max(dmg - character.defenseBuffer, 0);
+        character.defenseBuffer = 0;
+      }
+      if(character.escapeActive) {
+        netDamage = 0;
+        character.escapeActive = false;
+        window.logEvent(`${character.name} menekült a támadás alól!`);
+      }
+      character.currentHP = Math.max(character.currentHP - netDamage, 0);
+      document.getElementById("hpStatus").innerHTML = `Sebzés: ${netDamage} | Maradék HP: ${character.currentHP}`;
+      window.logEvent(`Támadás: ${character.name} kapott ${netDamage} sebzést!`);
+      if(character.currentHP === 0) alert("A karaktered meghalt!");
+      updateCharacterDisplay();
+    }
+    window.takeDamage = takeDamage;
+    
+    function triggerPortal() {
+      window.logEvent("Portál kártya: Dimenzióváltás!");
+      const dimensions = ["Haragosmély", "Pokol", "Zordsík"];
+      const newDimension = dimensions[Math.floor(Math.random() * dimensions.length)];
+      currentDimension = newDimension;
+      window.firebase.update(window.firebase.ref(`rooms/${window.roomId}`), { currentDimension: newDimension });
+    }
+    function updateDimension() {
+      document.body.className = dimensionClasses[currentDimension];
+    }
+    
+    function druidHealPigmen() {
+      if(character.class !== "Druida") {
+        alert("Csak a Druida tudja ezt a műveletet végrehajtani!");
+        return;
+      }
+      let pigmenName = prompt("Add meg a gyógyítandó Pigmen nevét:");
+      if(!pigmenName) return;
+      window.logEvent(`Druida gyógyította ${pigmenName}-t 100HP-val! (Szimulált)`);
+    }
+    window.druidHealPigmen = druidHealPigmen;
+    
+    function darkElfResurrect() {
+      if(character.class !== "SötétElf") {
+        alert("Csak a Sötét Elf tudja ezt a műveletet végrehajtani!");
+        return;
+      }
+      let targetName = prompt("Add meg a felélesztendő játékos nevét:");
+      if(!targetName) return;
+      const sacrifice = Math.floor(character.maxHP * 0.5);
+      if(character.currentHP <= sacrifice) {
+        alert("Nincs elég HP a feláldozáshoz!");
+        return;
+      }
+      character.currentHP -= sacrifice;
+      window.logEvent(`Sötét Elf feláldozta HP-ja 50%-át, és felélesztette ${targetName}-t!`);
+      updateCharacterDisplay();
+    }
+    window.darkElfResurrect = darkElfResurrect;
+    
+    function druidActivatePigmen() {
+      if(character.class !== "Druida") {
+        alert("Csak a Druida tudja ezt a műveletet végrehajtani!");
+        return;
+      }
+      window.logEvent("Druida aktiválta a Pigmen állati ösztét! (Szimulált)");
+    }
+    window.druidActivatePigmen = druidActivatePigmen;
+    
+    function createCharacter() {
+      const nameInput = document.getElementById("name").value.trim();
+      if (!nameInput) {
+        alert("Add meg a karaktered nevét!");
+        return;
+      }
+      const totalPoints = 20 - parseInt(document.getElementById('remainingPoints').textContent.split(': ')[1]);
+      if(totalPoints !== 20) {
+        alert("Pontosan 20 pontot kell szétosztani!");
+        return;
+      }
+      const className = document.getElementById("class").value;
+      if(className === "Tank" && parseInt(document.getElementById("atk").value) > 10) {
+        alert("Tank kasztnál nem adhat több mint 10 pontot az ATK-ra!");
+        return;
+      }
+      character = {
+        name: nameInput,
+        class: className,
+        originalClass: className,
+        currentForm: null,
+        maxHP: classHP[className],
+        currentHP: classHP[className],
+        atk: parseInt(document.getElementById("atk").value),
+        esc: parseInt(document.getElementById("esc").value),
+        def: parseInt(document.getElementById("def").value),
+        turnsSinceShapeshift: 0,
+        cards: [],
+        turnsSincePocket: 0,
+        inPocket: false,
+        pocketTurnsRemaining: 0,
+        turnsSinceFrenzy: 0,
+        passiveTurns: 0,
+        defenseBuffer: 0,
+        escapeActive: false,
+        isBoss: false,
+        preBossStatus: null
+      };
+      try {
+        if(window.roomId) {
+          const playersRef = window.firebase.ref(`rooms/${window.roomId}/players`);
+          const newPlayerRef = window.firebase.push(playersRef);
+          window.playerId = newPlayerRef.key;
+          window.firebase.set(newPlayerRef, character);
+          window.firebase.onDisconnect(newPlayerRef).remove();
+          window.logEvent(`${character.name} csatlakozott a játékhoz!`);
+        }
+      } catch (error) {
+        alert("Hiba történt a karakter létrehozásakor: " + error.message);
+      }
+      updateCharacterDisplay();
+      updateClassInfo();
+    }
+    window.createCharacter = createCharacter;
+    
+    function updateClassInfo() {
+      const selectedClass = document.getElementById("class").value;
+      let infoText = "";
+      if (classTypes.Fizikai.includes(selectedClass)) {
+        infoText = "Rezisztencia: Fizikai sebzés -20% | Érzékenység: Spirit sebzés +25%";
+      } else if (classTypes.Spirit.includes(selectedClass)) {
+        infoText = "Rezisztencia: Spirit sebzés -20% | Érzékenység: Fizikai sebzés +25%";
+      } else if (classTypes.Support.includes(selectedClass)) {
+        infoText = "Nincs rezisztencia vagy érzékenység";
+      } else if (selectedClass === "Alakváltó") {
+        infoText = "Alakváltó: 5 körönként választhat más kasztot 1 körre";
+        document.getElementById("shapeshiftSection").style.display = "block";
+      } else {
+        document.getElementById("shapeshiftSection").style.display = "none";
+      }
+      document.getElementById("classInfo").textContent = infoText;
+    }
+    window.updateClassInfo = updateClassInfo;
+    
+    window.saveNotes = function() {
+      const notes = document.getElementById("notesArea").value;
+      localStorage.setItem("gameNotes", notes);
+      alert("Jegyzetek elmentve!");
+    };
+    
+    window.onload = function() {
+      const savedNotes = localStorage.getItem("gameNotes");
+      if (savedNotes) {
+        document.getElementById("notesArea").value = savedNotes;
+      }
+      updateClassInfo();
+    };
+    
+    window.modifyStat = function(stat, change) {
+      const input = document.getElementById(stat);
+      const remainingElement = document.getElementById('remainingPoints');
+      let currentValue = parseInt(input.value);
+      let remaining = parseInt(remainingElement.textContent.split(': ')[1]);
+      if(change === 1) {
+        if(stat === "atk" && document.getElementById("class").value === "Tank" && currentValue >= 10) {
+          return;
+        }
+        if(remaining > 0 && currentValue < 20) {
+          input.value = currentValue + 1;
+          remainingElement.textContent = `Maradék pontok: ${remaining - 1}`;
+        }
+      } else {
+        if(currentValue > 1) {
+          input.value = currentValue - 1;
+          remainingElement.textContent = `Maradék pontok: ${remaining + 1}`;
+        }
+      }
+    };
+  </script>
+  
+  <!-- Játék indítása, kör-rendszer és csapatok -->
+  <script>
+    // A játék indítása után a szoba készítője a "startGameBtn" gombbal indítja el a játékot.
+    function startGame() {
+      if(!window.roomId) return;
+      const roomRef = window.firebase.ref(`rooms/${window.roomId}`);
+      window.firebase.update(roomRef, { gameStarted: true, currentRound: 1, currentTeamTurn: "A" });
+      window.logEvent("A játék elindult! Csapatok kiosztva.");
+      // Automatikus csapatkiosztás: az összes játékost váltakozva A és B csapatba osztjuk
+      const playersRef = window.firebase.ref(`rooms/${window.roomId}/players`);
+      window.firebase.get(playersRef).then(snapshot => {
+        const players = snapshot.val() || {};
+        let i = 0;
+        Object.keys(players).forEach(pid => {
+          const team = (i % 2 === 0) ? "A" : "B";
+          window.firebase.update(window.firebase.ref(`rooms/${window.roomId}/players/${pid}`), { team });
+          i++;
+        });
+      });
+      // A játék indítása után eltűnik a karakter készítési UI
+      document.getElementById("characterCreationSection").style.display = "none";
+    }
+    window.startGame = startGame;
+    
+    // Körváltás: ha a játék már elindult, a két csapat váltakozik; ha B után A, új kör indul.
+    function incrementTurn() {
+      turns++;
+      if(window.roomId) {
+        const roomRef = window.firebase.ref(`rooms/${window.roomId}`);
+        window.firebase.get(roomRef).then(snapshot => {
+          const roomData = snapshot.val();
+          if(roomData && roomData.gameStarted) {
+            let currentTeam = roomData.currentTeamTurn;
+            let newTeam = currentTeam === "A" ? "B" : "A";
+            let newRound = roomData.currentRound;
+            if(currentTeam === "B") { newRound++; }
+            window.firebase.update(roomRef, { currentTeamTurn: newTeam, currentRound: newRound });
+          }
+        });
+      }
+      // Védekezés, menekülés, alakváltás logika
+      if(character.class === "Alakváltó") {
+        character.turnsSinceShapeshift = Math.min(character.turnsSinceShapeshift + 1, 5);
+        const timerText = character.turnsSinceShapeshift >= 5 
+            ? "Alakváltás használható!" 
+            : `Alakváltás: ${5 - character.turnsSinceShapeshift} kör`;
+        document.getElementById("shapeshiftTimer").textContent = timerText;
+      }
+      if(character.class === "Mágus") {
+        if(!character.inPocket) {
+          character.turnsSincePocket++;
+          if(character.turnsSincePocket >= 20) {
+            character.inPocket = true;
+            character.pocketTurnsRemaining = 2;
+            character.turnsSincePocket = 0;
+            window.logEvent("Mágus belépett a zsebdimenzióba!");
+          }
+        } else {
+          character.pocketTurnsRemaining--;
+          if(character.pocketTurnsRemaining <= 0) {
+            character.inPocket = false;
+            character.currentHP = Math.min(character.currentHP + 100, character.maxHP);
+            window.logEvent("Mágus visszatért a valóságba 100HP gyógyulással!");
+          }
+        }
+      }
+      if(character.class === "Pigmen") {
+        if(character.passiveTurns > 0) {
+          character.passiveTurns--;
+          if(character.passiveTurns === 0) {
+            window.logEvent("Pigmen visszatért az aktív állapotba!");
+          }
+        } else {
+          character.turnsSinceFrenzy++;
+          if(character.turnsSinceFrenzy >= 5) {
+            window.logEvent("Pigmen állati ösztöne aktiválódott! (5 kör után)");
+            character.turnsSinceFrenzy = 0;
+            character.passiveTurns = 2;
+          }
+        }
+      }
+      // Dimenzióhoz kapcsolódó HP csökkenés
+      if(currentDimension === "Pokol") {
+        const loss = 5;
+        character.currentHP = Math.max(character.currentHP - loss, 0);
+        window.logEvent(`${character.name} -${loss}HP (Pokol dimenzió)`);
+      } else if(currentDimension === "Zordsík") {
+        const loss = 10;
+        character.currentHP = Math.max(character.currentHP - loss, 0);
+        window.logEvent(`${character.name} -${loss}HP (Zordsík dimenzió)`);
+      } else if(currentDimension === "Haragosmély") {
+        const loss = 2;
+        character.currentHP = Math.max(character.currentHP - loss, 0);
+        window.logEvent(`${character.name} -${loss}HP (Haragosmély dimenzió)`);
+      }
+      updateCharacterDisplay();
+    }
+    
+    function resetDeck() {
+      window.logEvent("Pakli újrakeverése...");
+      initializeDeck();
+      character.cards = [];
+      updateCharacterDisplay();
+      window.firebase.update(window.firebase.ref(`rooms/${window.roomId}`), { deck: roomDeck });
+    }
+    
+    // Kártyák kattintható használata
+    function useCard(index) {
+      if(!character || !character.cards || index < 0 || index >= character.cards.length) return;
+      const card = character.cards[index];
+      applyCardEffect(card, character);
+      character.cards.splice(index, 1);
+      updateCharacterDisplay();
+      window.logEvent(`Használtad: ${card.name}`);
+    }
+    window.useCard = useCard;
+    
+    // Karakter megjelenítése – a kártyák most kattinthatók
+    function updateCharacterDisplay() {
+      const hpPercent = (character.currentHP / character.maxHP) * 100;
+      const hpBar = document.getElementById('hpBar');
+      hpBar.style.width = `${hpPercent}%`;
+      hpBar.textContent = `${character.currentHP}/${character.maxHP}`;
+      const displayedClass = character.currentForm ? `${character.class} (${character.currentForm})` : character.class;
+      let cardList = "";
+      if(character.cards && character.cards.length > 0){
+        cardList = character.cards.map((c, idx) => `<span class="card" onclick="useCard(${idx})" title="${cardDefinitions[c.name]?.effect?.message || 'Nincs leírás'}">${c.name}</span>`).join(', ');
+      } else {
+        cardList = "Nincs kártya";
+      }
+      document.getElementById("characterInfo").innerHTML = `
+        Név: ${character.name}<br>
+        Kaszt: ${displayedClass}<br>
+        HP: ${character.currentHP}/${character.maxHP}<br>
+        ATK: ${character.atk}<br>
+        ESC: ${character.esc}<br>
+        DEF: ${character.def}<br>
+        Kártyák: ${cardList}
+      `;
+      if(window.playerId && window.roomId) {
+        const playerRef = window.firebase.ref(`rooms/${window.roomId}/players/${window.playerId}`);
+        window.firebase.update(playerRef, character).catch(error => {
+          alert("Szinkronizációs hiba: " + error.message);
+        });
+      }
+    }
+    
+    async function rollDice() {
+      try {
+        if (!character.name) throw new Error("Nincs karakter!");
+        const roomRef = window.firebase.ref(`rooms/${window.roomId}/events`);
+        const rollEvent = {
+          type: 'dice',
+          message: `Támadás: ${character.name} dobott a kockával!`,
+          processed: false,
+          timestamp: Date.now()
+        };
+        const newEventRef = window.firebase.push(roomRef);
+        await window.firebase.set(newEventRef, rollEvent);
+    
+        let roll6 = Math.floor(Math.random() * 6) + 1;
+        let roll10 = (character.class === "Tank") ? 10 : Math.floor(Math.random() * 10) + 1;
+        const diceResultEl = document.getElementById("diceResult");
+        diceResultEl.innerHTML = `6-os kocka: ${roll6}, 10-es kocka: ${roll10}`;
+        diceResultEl.classList.add('bounce');
+        setTimeout(() => { diceResultEl.classList.remove('bounce'); }, 500);
+    
+        let baseDamage = (roll6 * character.atk) / 2;
+        let elmeallapot = roll10 / 10;
+        const cardMultiplier = parseFloat(document.getElementById('cardMultiplier').value);
+        let totalDamage = Math.floor(baseDamage * cardMultiplier * elmeallapot);
+    
+        if(character.class === "Harcos") {
+          if(roll6 === 5) {
+            totalDamage *= 2;
+            window.logEvent("Támadás: Harcos kritikus találat!");
+          }
+          if(roll10 === 10) {
+            totalDamage *= 2;
+            window.logEvent("Támadás: Harcos dupla kritikus!");
+          }
+        }
+        if(character.class === "Koldus") {
+          let extraRoll = Math.floor(Math.random() * 10) + 1;
+          if(roll10 === 10 && extraRoll === 10) {
+            window.logEvent("Támadás: Koldus vakította az ellenfelet!");
+          }
+        }
+    
+        // Kiválasztjuk az ellenkező csapatból az első élő játékost
+        const opponent = getOpponent();
+        if(opponent.targetId) {
+          const newHP = Math.max(opponent.targetPlayer.currentHP - totalDamage, 0);
+          window.firebase.update(window.firebase.ref(`rooms/${window.roomId}/players/${opponent.targetId}`), { currentHP: newHP });
+          window.logEvent(`Támadás: ${character.name} okozott ${totalDamage} sebzést ${opponent.targetPlayer.name}-nak!`);
+          if(newHP === 0) {
+            window.logEvent(`${opponent.targetPlayer.name} legyőzve!`);
+          }
+        } else {
+          window.logEvent("Nincs ellenfél, aki sérülhetne!");
+        }
+    
+        const damageEvent = {
+          type: 'damage',
+          message: `Támadás: ${character.name} sebzése: ${totalDamage}`,
+          processed: false,
+          timestamp: Date.now()
+        };
+        await window.firebase.push(roomRef, damageEvent);
+        document.getElementById('diceResult').classList.add('damage-animation');
+        setTimeout(() => { document.getElementById('diceResult').classList.remove('damage-animation'); }, 500);
+        incrementTurn();
+      } catch (error) {
+        alert("Hiba történt: " + error.message);
+      }
+    }
+    window.rollDice = rollDice;
+    
+    function healCharacter() {
+      if(!character.name) {
+        alert("Előbb hozz létre karaktert!");
+        return;
+      }
+      let heal = parseInt(document.getElementById("healInput").value);
+      if(isNaN(heal) || heal < 0) {
+        alert("Érvénytelen gyógyítás érték!");
+        return;
+      }
+      if(character.class === "Pap") {
+        heal *= 2;
+      }
+      character.currentHP = Math.min(character.currentHP + heal, character.maxHP);
+      document.getElementById("healStatus").innerHTML = `Gyógyítás: ${heal} | Jelenlegi HP: ${character.currentHP}`;
+      window.logEvent(`Gyógyítás: ${character.name} gyógyult ${heal}HP-val!`);
+      updateCharacterDisplay();
+    }
+    window.healCharacter = healCharacter;
+    
+    function takeDamage() {
+      if(!character.name) {
+        alert("Előbb hozz létre karaktert!");
+        return;
+      }
+      if(character.inPocket && character.class === "Mágus") {
+        window.logEvent("Mágus a zsebdimenzióban, nem kap sebzést!");
+        return;
+      }
+      const dmg = parseInt(document.getElementById("dmgInput").value);
+      if(isNaN(dmg) || dmg < 0) {
+        alert("Érvénytelen sebzés érték!");
+        return;
+      }
+      let netDamage = dmg;
+      if(character.defenseBuffer) {
+        netDamage = Math.max(dmg - character.defenseBuffer, 0);
+        character.defenseBuffer = 0;
+      }
+      if(character.escapeActive) {
+        netDamage = 0;
+        character.escapeActive = false;
+        window.logEvent(`${character.name} menekült a támadás alól!`);
+      }
+      character.currentHP = Math.max(character.currentHP - netDamage, 0);
+      document.getElementById("hpStatus").innerHTML = `Sebzés: ${netDamage} | Maradék HP: ${character.currentHP}`;
+      window.logEvent(`Támadás: ${character.name} kapott ${netDamage} sebzést!`);
+      if(character.currentHP === 0) alert("A karaktered meghalt!");
+      updateCharacterDisplay();
+    }
+    window.takeDamage = takeDamage;
+    
+    function triggerPortal() {
+      window.logEvent("Portál kártya: Dimenzióváltás!");
+      const dimensions = ["Haragosmély", "Pokol", "Zordsík"];
+      const newDimension = dimensions[Math.floor(Math.random() * dimensions.length)];
+      currentDimension = newDimension;
+      window.firebase.update(window.firebase.ref(`rooms/${window.roomId}`), { currentDimension: newDimension });
+    }
+    function updateDimension() {
+      document.body.className = dimensionClasses[currentDimension];
+    }
+    
+    function druidHealPigmen() {
+      if(character.class !== "Druida") {
+        alert("Csak a Druida tudja ezt a műveletet végrehajtani!");
+        return;
+      }
+      let pigmenName = prompt("Add meg a gyógyítandó Pigmen nevét:");
+      if(!pigmenName) return;
+      window.logEvent(`Druida gyógyította ${pigmenName}-t 100HP-val! (Szimulált)`);
+    }
+    window.druidHealPigmen = druidHealPigmen;
+    
+    function darkElfResurrect() {
+      if(character.class !== "SötétElf") {
+        alert("Csak a Sötét Elf tudja ezt a műveletet végrehajtani!");
+        return;
+      }
+      let targetName = prompt("Add meg a felélesztendő játékos nevét:");
+      if(!targetName) return;
+      const sacrifice = Math.floor(character.maxHP * 0.5);
+      if(character.currentHP <= sacrifice) {
+        alert("Nincs elég HP a feláldozáshoz!");
+        return;
+      }
+      character.currentHP -= sacrifice;
+      window.logEvent(`Sötét Elf feláldozta HP-ja 50%-át, és felélesztette ${targetName}-t!`);
+      updateCharacterDisplay();
+    }
+    window.darkElfResurrect = darkElfResurrect;
+    
+    function druidActivatePigmen() {
+      if(character.class !== "Druida") {
+        alert("Csak a Druida tudja ezt a műveletet végrehajtani!");
+        return;
+      }
+      window.logEvent("Druida aktiválta a Pigmen állati ösztét! (Szimulált)");
+    }
+    window.druidActivatePigmen = druidActivatePigmen;
+    
+    function createCharacter() {
+      const nameInput = document.getElementById("name").value.trim();
+      if (!nameInput) {
+        alert("Add meg a karaktered nevét!");
+        return;
+      }
+      const totalPoints = 20 - parseInt(document.getElementById('remainingPoints').textContent.split(': ')[1]);
+      if(totalPoints !== 20) {
+        alert("Pontosan 20 pontot kell szétosztani!");
+        return;
+      }
+      const className = document.getElementById("class").value;
+      if(className === "Tank" && parseInt(document.getElementById("atk").value) > 10) {
+        alert("Tank kasztnál nem adhat több mint 10 pontot az ATK-ra!");
+        return;
+      }
+      character = {
+        name: nameInput,
+        class: className,
+        originalClass: className,
+        currentForm: null,
+        maxHP: classHP[className],
+        currentHP: classHP[className],
+        atk: parseInt(document.getElementById("atk").value),
+        esc: parseInt(document.getElementById("esc").value),
+        def: parseInt(document.getElementById("def").value),
+        turnsSinceShapeshift: 0,
+        cards: [],
+        turnsSincePocket: 0,
+        inPocket: false,
+        pocketTurnsRemaining: 0,
+        turnsSinceFrenzy: 0,
+        passiveTurns: 0,
+        defenseBuffer: 0,
+        escapeActive: false,
+        isBoss: false,
+        preBossStatus: null
+      };
+      try {
+        if(window.roomId) {
+          const playersRef = window.firebase.ref(`rooms/${window.roomId}/players`);
+          const newPlayerRef = window.firebase.push(playersRef);
+          window.playerId = newPlayerRef.key;
+          window.firebase.set(newPlayerRef, character);
+          window.firebase.onDisconnect(newPlayerRef).remove();
+          window.logEvent(`${character.name} csatlakozott a játékhoz!`);
+        }
+      } catch (error) {
+        alert("Hiba történt a karakter létrehozásakor: " + error.message);
+      }
+      updateCharacterDisplay();
+      updateClassInfo();
+    }
+    window.createCharacter = createCharacter;
+    
+    function updateClassInfo() {
+      const selectedClass = document.getElementById("class").value;
+      let infoText = "";
+      if (classTypes.Fizikai.includes(selectedClass)) {
+        infoText = "Rezisztencia: Fizikai sebzés -20% | Érzékenység: Spirit sebzés +25%";
+      } else if (classTypes.Spirit.includes(selectedClass)) {
+        infoText = "Rezisztencia: Spirit sebzés -20% | Érzékenység: Fizikai sebzés +25%";
+      } else if (classTypes.Support.includes(selectedClass)) {
+        infoText = "Nincs rezisztencia vagy érzékenység";
+      } else if (selectedClass === "Alakváltó") {
+        infoText = "Alakváltó: 5 körönként választhat más kasztot 1 körre";
+        document.getElementById("shapeshiftSection").style.display = "block";
+      } else {
+        document.getElementById("shapeshiftSection").style.display = "none";
+      }
+      document.getElementById("classInfo").textContent = infoText;
+    }
+    window.updateClassInfo = updateClassInfo;
+    
+    window.saveNotes = function() {
+      const notes = document.getElementById("notesArea").value;
+      localStorage.setItem("gameNotes", notes);
+      alert("Jegyzetek elmentve!");
+    };
+    
+    window.onload = function() {
+      const savedNotes = localStorage.getItem("gameNotes");
+      if (savedNotes) {
+        document.getElementById("notesArea").value = savedNotes;
+      }
+      updateClassInfo();
+    };
+    
+    window.modifyStat = function(stat, change) {
+      const input = document.getElementById(stat);
+      const remainingElement = document.getElementById('remainingPoints');
+      let currentValue = parseInt(input.value);
+      let remaining = parseInt(remainingElement.textContent.split(': ')[1]);
+      if(change === 1) {
+        if(stat === "atk" && document.getElementById("class").value === "Tank" && currentValue >= 10) {
+          return;
+        }
+        if(remaining > 0 && currentValue < 20) {
+          input.value = currentValue + 1;
+          remainingElement.textContent = `Maradék pontok: ${remaining - 1}`;
+        }
+      } else {
+        if(currentValue > 1) {
+          input.value = currentValue - 1;
+          remainingElement.textContent = `Maradék pontok: ${remaining + 1}`;
+        }
+      }
+    };
+  </script>
+  
+  <!-- Játék indítása, kör-rendszer és csapatok -->
+  <script>
+    // A játék indítása után a szoba készítője a "startGameBtn" gombbal indítja el a játékot.
+    function startGame() {
+      if(!window.roomId) return;
+      const roomRef = window.firebase.ref(`rooms/${window.roomId}`);
+      window.firebase.update(roomRef, { gameStarted: true, currentRound: 1, currentTeamTurn: "A" });
+      window.logEvent("A játék elindult! Csapatok kiosztva.");
+      // Csapatok kiosztása: az összes játékost váltakozva A és B csapatba osztjuk
+      const playersRef = window.firebase.ref(`rooms/${window.roomId}/players`);
+      window.firebase.get(playersRef).then(snapshot => {
+        const players = snapshot.val() || {};
+        let i = 0;
+        Object.keys(players).forEach(pid => {
+          const team = (i % 2 === 0) ? "A" : "B";
+          window.firebase.update(window.firebase.ref(`rooms/${window.roomId}/players/${pid}`), { team });
+          i++;
+        });
+      });
+      // A játék indítása után eltűnik a karakter készítési UI
+      document.getElementById("characterCreationSection").style.display = "none";
+    }
+    window.startGame = startGame;
+    
+    // Körváltás: ha a játék már elindult, a két csapat váltakozik; ha B után A, új kör indul.
+    function incrementTurn() {
+      turns++;
+      if(window.roomId) {
+        const roomRef = window.firebase.ref(`rooms/${window.roomId}`);
+        window.firebase.get(roomRef).then(snapshot => {
+          const roomData = snapshot.val();
+          if(roomData && roomData.gameStarted) {
+            let currentTeam = roomData.currentTeamTurn;
+            let newTeam = currentTeam === "A" ? "B" : "A";
+            let newRound = roomData.currentRound;
+            if(currentTeam === "B") { newRound++; }
+            window.firebase.update(roomRef, { currentTeamTurn: newTeam, currentRound: newRound });
+          }
+        });
+      }
+      // Védekezés, menekülés, alakváltás logika
+      if(character.class === "Alakváltó") {
+        character.turnsSinceShapeshift = Math.min(character.turnsSinceShapeshift + 1, 5);
+        const timerText = character.turnsSinceShapeshift >= 5 
+            ? "Alakváltás használható!" 
+            : `Alakváltás: ${5 - character.turnsSinceShapeshift} kör`;
+        document.getElementById("shapeshiftTimer").textContent = timerText;
+      }
+      if(character.class === "Mágus") {
+        if(!character.inPocket) {
+          character.turnsSincePocket++;
+          if(character.turnsSincePocket >= 20) {
+            character.inPocket = true;
+            character.pocketTurnsRemaining = 2;
+            character.turnsSincePocket = 0;
+            window.logEvent("Mágus belépett a zsebdimenzióba!");
+          }
+        } else {
+          character.pocketTurnsRemaining--;
+          if(character.pocketTurnsRemaining <= 0) {
+            character.inPocket = false;
+            character.currentHP = Math.min(character.currentHP + 100, character.maxHP);
+            window.logEvent("Mágus visszatért a valóságba 100HP gyógyulással!");
+          }
+        }
+      }
+      if(character.class === "Pigmen") {
+        if(character.passiveTurns > 0) {
+          character.passiveTurns--;
+          if(character.passiveTurns === 0) {
+            window.logEvent("Pigmen visszatért az aktív állapotba!");
+          }
+        } else {
+          character.turnsSinceFrenzy++;
+          if(character.turnsSinceFrenzy >= 5) {
+            window.logEvent("Pigmen állati ösztöne aktiválódott! (5 kör után)");
+            character.turnsSinceFrenzy = 0;
+            character.passiveTurns = 2;
+          }
+        }
+      }
+      // Dimenzióhoz kapcsolódó HP csökkenés
+      if(currentDimension === "Pokol") {
+        const loss = 5;
+        character.currentHP = Math.max(character.currentHP - loss, 0);
+        window.logEvent(`${character.name} -${loss}HP (Pokol dimenzió)`);
+      } else if(currentDimension === "Zordsík") {
+        const loss = 10;
+        character.currentHP = Math.max(character.currentHP - loss, 0);
+        window.logEvent(`${character.name} -${loss}HP (Zordsík dimenzió)`);
+      } else if(currentDimension === "Haragosmély") {
+        const loss = 2;
+        character.currentHP = Math.max(character.currentHP - loss, 0);
+        window.logEvent(`${character.name} -${loss}HP (Haragosmély dimenzió)`);
+      }
+      updateCharacterDisplay();
+    }
+    
+    function resetDeck() {
+      window.logEvent("Pakli újrakeverése...");
+      initializeDeck();
+      character.cards = [];
+      updateCharacterDisplay();
+      window.firebase.update(window.firebase.ref(`rooms/${window.roomId}`), { deck: roomDeck });
+    }
+    
+    // Kártyák kattintható használata
+    function useCard(index) {
+      if(!character || !character.cards || index < 0 || index >= character.cards.length) return;
+      const card = character.cards[index];
+      applyCardEffect(card, character);
+      character.cards.splice(index, 1);
+      updateCharacterDisplay();
+      window.logEvent(`Használtad: ${card.name}`);
+    }
+    window.useCard = useCard;
+    
+    // Karakter megjelenítése
+    function updateCharacterDisplay() {
+      const hpPercent = (character.currentHP / character.maxHP) * 100;
+      const hpBar = document.getElementById('hpBar');
+      hpBar.style.width = `${hpPercent}%`;
+      hpBar.textContent = `${character.currentHP}/${character.maxHP}`;
+      const displayedClass = character.currentForm ? `${character.class} (${character.currentForm})` : character.class;
+      let cardList = "";
+      if(character.cards && character.cards.length > 0){
+        cardList = character.cards.map((c, idx) => `<span class="card" onclick="useCard(${idx})" title="${cardDefinitions[c.name]?.effect?.message || 'Nincs leírás'}">${c.name}</span>`).join(', ');
+      } else {
+        cardList = "Nincs kártya";
+      }
+      document.getElementById("characterInfo").innerHTML = `
+        Név: ${character.name}<br>
+        Kaszt: ${displayedClass}<br>
+        HP: ${character.currentHP}/${character.maxHP}<br>
+        ATK: ${character.atk}<br>
+        ESC: ${character.esc}<br>
+        DEF: ${character.def}<br>
+        Kártyák: ${cardList}
+      `;
+      if(window.playerId && window.roomId) {
+        const playerRef = window.firebase.ref(`rooms/${window.roomId}/players/${window.playerId}`);
+        window.firebase.update(playerRef, character).catch(error => {
+          alert("Szinkronizációs hiba: " + error.message);
+        });
+      }
+    }
+    
+    async function rollDice() {
+      try {
+        if (!character.name) throw new Error("Nincs karakter!");
+        const roomRef = window.firebase.ref(`rooms/${window.roomId}/events`);
+        const rollEvent = {
+          type: 'dice',
+          message: `Támadás: ${character.name} dobott a kockával!`,
+          processed: false,
+          timestamp: Date.now()
+        };
+        const newEventRef = window.firebase.push(roomRef);
+        await window.firebase.set(newEventRef, rollEvent);
+    
+        let roll6 = Math.floor(Math.random() * 6) + 1;
+        let roll10 = (character.class === "Tank") ? 10 : Math.floor(Math.random() * 10) + 1;
+        const diceResultEl = document.getElementById("diceResult");
+        diceResultEl.innerHTML = `6-os kocka: ${roll6}, 10-es kocka: ${roll10}`;
+        diceResultEl.classList.add('bounce');
+        setTimeout(() => { diceResultEl.classList.remove('bounce'); }, 500);
+    
+        let baseDamage = (roll6 * character.atk) / 2;
+        let elmeallapot = roll10 / 10;
+        const cardMultiplier = parseFloat(document.getElementById('cardMultiplier').value);
+        let totalDamage = Math.floor(baseDamage * cardMultiplier * elmeallapot);
+    
+        if(character.class === "Harcos") {
+          if(roll6 === 5) {
+            totalDamage *= 2;
+            window.logEvent("Támadás: Harcos kritikus találat!");
+          }
+          if(roll10 === 10) {
+            totalDamage *= 2;
+            window.logEvent("Támadás: Harcos dupla kritikus!");
+          }
+        }
+        if(character.class === "Koldus") {
+          let extraRoll = Math.floor(Math.random() * 10) + 1;
+          if(roll10 === 10 && extraRoll === 10) {
+            window.logEvent("Támadás: Koldus vakította az ellenfelet!");
+          }
+        }
+    
+        // Kiválasztjuk az ellenkező csapatból az első élő játékost
+        const opponent = getOpponent();
+        if(opponent.targetId) {
+          const newHP = Math.max(opponent.targetPlayer.currentHP - totalDamage, 0);
+          window.firebase.update(window.firebase.ref(`rooms/${window.roomId}/players/${opponent.targetId}`), { currentHP: newHP });
+          window.logEvent(`Támadás: ${character.name} okozott ${totalDamage} sebzést ${opponent.targetPlayer.name}-nak!`);
+          if(newHP === 0) {
+            window.logEvent(`${opponent.targetPlayer.name} legyőzve!`);
+          }
+        } else {
+          window.logEvent("Nincs ellenfél, aki sérülhetne!");
+        }
+    
+        const damageEvent = {
+          type: 'damage',
+          message: `Támadás: ${character.name} sebzése: ${totalDamage}`,
+          processed: false,
+          timestamp: Date.now()
+        };
+        await window.firebase.push(roomRef, damageEvent);
+        document.getElementById('diceResult').classList.add('damage-animation');
+        setTimeout(() => { document.getElementById('diceResult').classList.remove('damage-animation'); }, 500);
+        incrementTurn();
+      } catch (error) {
+        alert("Hiba történt: " + error.message);
+      }
+    }
+    window.rollDice = rollDice;
+    
+    function healCharacter() {
+      if(!character.name) {
+        alert("Előbb hozz létre karaktert!");
+        return;
+      }
+      let heal = parseInt(document.getElementById("healInput").value);
+      if(isNaN(heal) || heal < 0) {
+        alert("Érvénytelen gyógyítás érték!");
+        return;
+      }
+      if(character.class === "Pap") {
+        heal *= 2;
+      }
+      character.currentHP = Math.min(character.currentHP + heal, character.maxHP);
+      document.getElementById("healStatus").innerHTML = `Gyógyítás: ${heal} | Jelenlegi HP: ${character.currentHP}`;
+      window.logEvent(`Gyógyítás: ${character.name} gyógyult ${heal}HP-val!`);
+      updateCharacterDisplay();
+    }
+    window.healCharacter = healCharacter;
+    
+    function takeDamage() {
+      if(!character.name) {
+        alert("Előbb hozz létre karaktert!");
+        return;
+      }
+      if(character.inPocket && character.class === "Mágus") {
+        window.logEvent("Mágus a zsebdimenzióban, nem kap sebzést!");
+        return;
+      }
+      const dmg = parseInt(document.getElementById("dmgInput").value);
+      if(isNaN(dmg) || dmg < 0) {
+        alert("Érvénytelen sebzés érték!");
+        return;
+      }
+      let netDamage = dmg;
+      if(character.defenseBuffer) {
+        netDamage = Math.max(dmg - character.defenseBuffer, 0);
+        character.defenseBuffer = 0;
+      }
+      if(character.escapeActive) {
+        netDamage = 0;
+        character.escapeActive = false;
+        window.logEvent(`${character.name} menekült a támadás alól!`);
+      }
+      character.currentHP = Math.max(character.currentHP - netDamage, 0);
+      document.getElementById("hpStatus").innerHTML = `Sebzés: ${netDamage} | Maradék HP: ${character.currentHP}`;
+      window.logEvent(`Támadás: ${character.name} kapott ${netDamage} sebzést!`);
+      if(character.currentHP === 0) alert("A karaktered meghalt!");
+      updateCharacterDisplay();
+    }
+    window.takeDamage = takeDamage;
+    
+    function triggerPortal() {
+      window.logEvent("Portál kártya: Dimenzióváltás!");
+      const dimensions = ["Haragosmély", "Pokol", "Zordsík"];
+      const newDimension = dimensions[Math.floor(Math.random() * dimensions.length)];
+      currentDimension = newDimension;
+      window.firebase.update(window.firebase.ref(`rooms/${window.roomId}`), { currentDimension: newDimension });
+    }
+    function updateDimension() {
+      document.body.className = dimensionClasses[currentDimension];
+    }
+    
+    function druidHealPigmen() {
+      if(character.class !== "Druida") {
+        alert("Csak a Druida tudja ezt a műveletet végrehajtani!");
+        return;
+      }
+      let pigmenName = prompt("Add meg a gyógyítandó Pigmen nevét:");
+      if(!pigmenName) return;
+      window.logEvent(`Druida gyógyította ${pigmenName}-t 100HP-val! (Szimulált)`);
+    }
+    window.druidHealPigmen = druidHealPigmen;
+    
+    function darkElfResurrect() {
+      if(character.class !== "SötétElf") {
+        alert("Csak a Sötét Elf tudja ezt a műveletet végrehajtani!");
+        return;
+      }
+      let targetName = prompt("Add meg a felélesztendő játékos nevét:");
+      if(!targetName) return;
+      const sacrifice = Math.floor(character.maxHP * 0.5);
+      if(character.currentHP <= sacrifice) {
+        alert("Nincs elég HP a feláldozáshoz!");
+        return;
+      }
+      character.currentHP -= sacrifice;
+      window.logEvent(`Sötét Elf feláldozta HP-ja 50%-át, és felélesztette ${targetName}-t!`);
+      updateCharacterDisplay();
+    }
+    window.darkElfResurrect = darkElfResurrect;
+    
+    function druidActivatePigmen() {
+      if(character.class !== "Druida") {
+        alert("Csak a Druida tudja ezt a műveletet végrehajtani!");
+        return;
+      }
+      window.logEvent("Druida aktiválta a Pigmen állati ösztét! (Szimulált)");
+    }
+    window.druidActivatePigmen = druidActivatePigmen;
+    
+    function createCharacter() {
+      const nameInput = document.getElementById("name").value.trim();
+      if (!nameInput) {
+        alert("Add meg a karaktered nevét!");
+        return;
+      }
+      const totalPoints = 20 - parseInt(document.getElementById('remainingPoints').textContent.split(': ')[1]);
+      if(totalPoints !== 20) {
+        alert("Pontosan 20 pontot kell szétosztani!");
+        return;
+      }
+      const className = document.getElementById("class").value;
+      if(className === "Tank" && parseInt(document.getElementById("atk").value) > 10) {
+        alert("Tank kasztnál nem adhat több mint 10 pontot az ATK-ra!");
+        return;
+      }
+      character = {
+        name: nameInput,
+        class: className,
+        originalClass: className,
+        currentForm: null,
+        maxHP: classHP[className],
+        currentHP: classHP[className],
+        atk: parseInt(document.getElementById("atk").value),
+        esc: parseInt(document.getElementById("esc").value),
+        def: parseInt(document.getElementById("def").value),
+        turnsSinceShapeshift: 0,
+        cards: [],
+        turnsSincePocket: 0,
+        inPocket: false,
+        pocketTurnsRemaining: 0,
+        turnsSinceFrenzy: 0,
+        passiveTurns: 0,
+        defenseBuffer: 0,
+        escapeActive: false,
+        isBoss: false,
+        preBossStatus: null
+      };
+      try {
+        if(window.roomId) {
+          const playersRef = window.firebase.ref(`rooms/${window.roomId}/players`);
+          const newPlayerRef = window.firebase.push(playersRef);
+          window.playerId = newPlayerRef.key;
+          window.firebase.set(newPlayerRef, character);
+          window.firebase.onDisconnect(newPlayerRef).remove();
+          window.logEvent(`${character.name} csatlakozott a játékhoz!`);
+        }
+      } catch (error) {
+        alert("Hiba történt a karakter létrehozásakor: " + error.message);
+      }
+      updateCharacterDisplay();
+      updateClassInfo();
+    }
+    window.createCharacter = createCharacter;
+    
+    function updateClassInfo() {
+      const selectedClass = document.getElementById("class").value;
+      let infoText = "";
+      if (classTypes.Fizikai.includes(selectedClass)) {
+        infoText = "Rezisztencia: Fizikai sebzés -20% | Érzékenység: Spirit sebzés +25%";
+      } else if (classTypes.Spirit.includes(selectedClass)) {
+        infoText = "Rezisztencia: Spirit sebzés -20% | Érzékenység: Fizikai sebzés +25%";
+      } else if (classTypes.Support.includes(selectedClass)) {
+        infoText = "Nincs rezisztencia vagy érzékenység";
+      } else if (selectedClass === "Alakváltó") {
+        infoText = "Alakváltó: 5 körönként választhat más kasztot 1 körre";
+        document.getElementById("shapeshiftSection").style.display = "block";
+      } else {
+        document.getElementById("shapeshiftSection").style.display = "none";
+      }
+      document.getElementById("classInfo").textContent = infoText;
+    }
+    window.updateClassInfo = updateClassInfo;
+    
+    window.saveNotes = function() {
+      const notes = document.getElementById("notesArea").value;
+      localStorage.setItem("gameNotes", notes);
+      alert("Jegyzetek elmentve!");
+    };
+    
+    window.onload = function() {
+      const savedNotes = localStorage.getItem("gameNotes");
+      if (savedNotes) {
+        document.getElementById("notesArea").value = savedNotes;
+      }
+      updateClassInfo();
+    };
+    
+    window.modifyStat = function(stat, change) {
+      const input = document.getElementById(stat);
+      const remainingElement = document.getElementById('remainingPoints');
+      let currentValue = parseInt(input.value);
+      let remaining = parseInt(remainingElement.textContent.split(': ')[1]);
+      if(change === 1) {
+        if(stat === "atk" && document.getElementById("class").value === "Tank" && currentValue >= 10) {
+          return;
+        }
+        if(remaining > 0 && currentValue < 20) {
+          input.value = currentValue + 1;
+          remainingElement.textContent = `Maradék pontok: ${remaining - 1}`;
+        }
+      } else {
+        if(currentValue > 1) {
+          input.value = currentValue - 1;
+          remainingElement.textContent = `Maradék pontok: ${remaining + 1}`;
+        }
+      }
+    };
+  </script>
+  
+  <!-- Játék indítása, kör-rendszer és csapatok -->
+  <script>
+    function startGame() {
+      if(!window.roomId) return;
+      const roomRef = window.firebase.ref(`rooms/${window.roomId}`);
+      window.firebase.update(roomRef, { gameStarted: true, currentRound: 1, currentTeamTurn: "A" });
+      window.logEvent("A játék elindult! Csapatok kiosztva.");
+      const playersRef = window.firebase.ref(`rooms/${window.roomId}/players`);
+      window.firebase.get(playersRef).then(snapshot => {
+        const players = snapshot.val() || {};
+        let i = 0;
+        Object.keys(players).forEach(pid => {
+          const team = (i % 2 === 0) ? "A" : "B";
+          window.firebase.update(window.firebase.ref(`rooms/${window.roomId}/players/${pid}`), { team });
+          i++;
+        });
+      });
+      // A játék indítása után a karakter készítési UI eltűnik.
+      document.getElementById("characterCreationSection").style.display = "none";
+    }
+    window.startGame = startGame;
+    
+    function incrementTurn() {
+      turns++;
+      if(window.roomId) {
+        const roomRef = window.firebase.ref(`rooms/${window.roomId}`);
+        window.firebase.get(roomRef).then(snapshot => {
+          const roomData = snapshot.val();
+          if(roomData && roomData.gameStarted) {
+            let currentTeam = roomData.currentTeamTurn;
+            let newTeam = currentTeam === "A" ? "B" : "A";
+            let newRound = roomData.currentRound;
+            if(currentTeam === "B") { newRound++; }
+            window.firebase.update(roomRef, { currentTeamTurn: newTeam, currentRound: newRound });
+          }
+        });
+      }
+      if(character.class === "Alakváltó") {
+        character.turnsSinceShapeshift = Math.min(character.turnsSinceShapeshift + 1, 5);
+        const timerText = character.turnsSinceShapeshift >= 5 
+            ? "Alakváltás használható!" 
+            : `Alakváltás: ${5 - character.turnsSinceShapeshift} kör`;
+        document.getElementById("shapeshiftTimer").textContent = timerText;
+      }
+      if(character.class === "Mágus") {
+        if(!character.inPocket) {
+          character.turnsSincePocket++;
+          if(character.turnsSincePocket >= 20) {
+            character.inPocket = true;
+            character.pocketTurnsRemaining = 2;
+            character.turnsSincePocket = 0;
+            window.logEvent("Mágus belépett a zsebdimenzióba!");
+          }
+        } else {
+          character.pocketTurnsRemaining--;
+          if(character.pocketTurnsRemaining <= 0) {
+            character.inPocket = false;
+            character.currentHP = Math.min(character.currentHP + 100, character.maxHP);
+            window.logEvent("Mágus visszatért a valóságba 100HP gyógyulással!");
+          }
+        }
+      }
+      if(character.class === "Pigmen") {
+        if(character.passiveTurns > 0) {
+          character.passiveTurns--;
+          if(character.passiveTurns === 0) {
+            window.logEvent("Pigmen visszatért az aktív állapotba!");
+          }
+        } else {
+          character.turnsSinceFrenzy++;
+          if(character.turnsSinceFrenzy >= 5) {
+            window.logEvent("Pigmen állati ösztöne aktiválódott! (5 kör után)");
+            character.turnsSinceFrenzy = 0;
+            character.passiveTurns = 2;
+          }
+        }
+      }
+      if(currentDimension === "Pokol") {
+        const loss = 5;
+        character.currentHP = Math.max(character.currentHP - loss, 0);
+        window.logEvent(`${character.name} -${loss}HP (Pokol dimenzió)`);
+      } else if(currentDimension === "Zordsík") {
+        const loss = 10;
+        character.currentHP = Math.max(character.currentHP - loss, 0);
+        window.logEvent(`${character.name} -${loss}HP (Zordsík dimenzió)`);
+      } else if(currentDimension === "Haragosmély") {
+        const loss = 2;
+        character.currentHP = Math.max(character.currentHP - loss, 0);
+        window.logEvent(`${character.name} -${loss}HP (Haragosmély dimenzió)`);
+      }
+      updateCharacterDisplay();
+    }
+    
+    function resetDeck() {
+      window.logEvent("Pakli újrakeverése...");
+      initializeDeck();
+      character.cards = [];
+      updateCharacterDisplay();
+      window.firebase.update(window.firebase.ref(`rooms/${window.roomId}`), { deck: roomDeck });
+    }
+  </script>
+  
+  <!-- Játéklogika vége -->
+  <script>
+    // A támadás során kiválasztjuk az ellenkező csapat első élő játékosát
+    function getOpponent() {
+      let targetId = null;
+      let targetPlayer = null;
+      for (const pid in window.globalPlayers) {
+        const p = window.globalPlayers[pid];
+        if(p.team && character.team && p.team !== character.team && p.currentHP > 0) {
+          targetId = pid;
+          targetPlayer = p;
+          break;
+        }
+      }
+      return { targetId, targetPlayer };
+    }
+  </script>
+</body>
+</html>
